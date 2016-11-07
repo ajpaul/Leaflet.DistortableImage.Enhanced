@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaflet.DistortableImage Example</title>
+  <meta charset="utf-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="leaflet-src.js"></script> 
+  <link rel="stylesheet" href="https://opensource.keycdn.com/fontawesome/4.7.0/font-awesome.min.css" integrity="sha384-dNpIIXE8U05kAbPhy3G1cz+yZmTzA6CY8Vg/u2L9xRnHjJiAK76m2BIEaSEV+/aU" crossorigin="anonymous">
+  <link rel="stylesheet" href="leaflet.css" />
+  <link rel="stylesheet" href="styles.css">
+  <script src="./leaflet-toolbar/leaflet.toolbar.js"></script>
+  <link href="./leaflet-toolbar/leaflet.toolbar.css" rel="stylesheet"/>
+
+  <link rel="stylesheet" href="leaflet.distortableimage.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  <script src="leaflet.distortableimage.js"></script>
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>    
+</head>
+<body>
+
+  <div class="container">
+
+    <aside class="config-panel">
+
+        <h2>Georectify</h2>
+
+        <section class="jump">
+            <h2>Jump to:</h2>
+            <div class="row"><input id="jumpLat" type="number" placeholder="Latitude"></div>
+            <div class="row"><input id="jumpLong" type="number" placeholder="Longitude"></div>
+            <div class="row"><input id="jumpZoom" type="number" placeholder="Zoom Level"></div>
+            <button id="jumpBtn">Jump!</button>
+        </section>
+
+        <section class="add">
+            <h2>Add image:</h2>
+            <span>Paste the image URL, enter the dimensions, then toggle the add mode button to ON to add an image to the map</span>
+            <div class="row"><input id="addUrl" type="text" placeholder="Image URL"></div>
+            <div class="row"><input id="addWidth" type="text" placeholder="Width (px)"></div>
+            <div class="row"><input id="addHeight" type="text" placeholder="Height (px)"></div>
+            Add mode: <input type="button" value="OFF" id="addToggle" />
+        </section>
+
+        <section class="click">
+            <h2>Click Info</h2>
+            <div>Lat: <span id="clickLat"></span></div>
+            <div>Lng: <span id="clickLng"></span></div>
+            <div>X (pixels): <span id="clickX"></span></div>
+            <div>Y (pixels): <span id="clickY"></span></div>
+        </section>
+
+    </aside>
+
+    <div id="map"</div>
+
+  </div>
+  <script>
+
+    var map
+
+    (function(){
+
+      // basic Leaflet map setup
+      map = new L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tiles.mapbox.com/v3/anishshah101.ipm9j6em/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+          '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+          'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+        id: 'examples.map-i86knfo3'
+      }).addTo(map);
+
+      // create an image
+      img = new L.DistortableImageOverlay(
+        'http://gmkfreelogos.com/logos/A/img/Acuity_Brands.gif', {
+          corners: [
+            new L.latLng(51.52,-0.14),
+            new L.latLng(51.52,-0.10),
+            new L.latLng(51.50,-0.14),
+            new L.latLng(51.50,-0.10)
+          ]
+        }
+      ).addTo(map);
+
+      L.DomEvent.on(img._image, 'load', img.editing.enable, img.editing);
+
+      //jump to a certain place on the map
+      $("#jumpBtn").click(function() {
+          map.setView([$("#jumpLat").val(), $("#jumpLong").val()], $("#jumpZoom").val());
+      });
+
+      //add image to map
+      function addImage(latlng) {
+
+        var topLeftPixels = map.latLngToContainerPoint(latlng); 
+        var width = parseInt($("#addWidth").val(), 10); // in px
+        var height = parseInt($("#addHeight").val(), 10); // in px
+
+        //convert px to [lat, long]
+        var topRight = map.containerPointToLatLng([topLeftPixels.x + width, topLeftPixels.y]);
+        var bottomLeft = map.containerPointToLatLng([topLeftPixels.x, topLeftPixels.y + height]);
+        var bottomRight = map.containerPointToLatLng([topLeftPixels.x + width, topLeftPixels.y + height]);
+
+        img = new L.DistortableImageOverlay(
+            $("#addUrl").val(), {
+            corners: [
+                new L.latLng(latlng.lat,latlng.lng), //top left
+                new L.latLng(topRight), //top right
+                new L.latLng(bottomLeft), //bottom left
+                new L.latLng(bottomRight)  //bottom right
+            ]
+            }
+        ).addTo(map);
+
+        L.DomEvent.on(img._image, 'load', img.editing.enable, img.editing);
+      }
+
+      //update click coordinate information
+      map.on('click', function(e) {
+          $("#clickLat").text(e.latlng.lat);
+          $("#clickLng").text(e.latlng.lng);
+
+          let pixels = map.latLngToContainerPoint(e.latlng);
+
+          $("#clickX").text(pixels.x);
+          $("#clickY").text(pixels.y);
+
+          console.log($("#addToggle").val());
+          if($("#addToggle").val()=="ON")
+            addImage(e.latlng);
+      });
+
+    //toggle mode
+    $("#addToggle").click(function()
+    {
+
+        if(this.value=="OFF")
+        {
+            this.value="ON";
+        }
+        else
+        {
+            this.value="OFF";
+        }
+    });
+
+    })();
+  </script>
+      
+</html>
